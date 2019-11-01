@@ -1,0 +1,17 @@
+---
+title: "MinneMUDAC Data Analytics Competition"
+author: "Bjorn Melin"
+date: "10/24/19"
+output: html_notebook
+---
+
+```{r}
+# Load the dataset
+us_markets <- read.csv("US_Markets.csv", stringsAsFactors = TRUE)
+us_suppliers <- read.csv("US_Suppliers.csv", stringsAsFactors = TRUE)
+us_competetor <- read.csv("Competetor_Markets.csv", stringsAsFactors = TRUE)
+View(us_markets)
+View(us_suppliers)
+View(us_competetor)
+variable.names(m_ex_rates)
+```
