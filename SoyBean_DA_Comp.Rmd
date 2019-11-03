@@ -1,0 +1,34 @@
+---
+title: "Soybean_exchangeRate_DAcomp"
+author: "Carter Duncan"
+date: "10/21/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+exchange_rate <- read.csv("/Users/CDUNK41/Desktop/USmarkets_data.csv")
+
+str(exchange_rate)
+
+library(psych)
+
+sample_exchange <- exchange_rate[1:400, ]
+sample_exchange_test <- exchange_rate[401:600, ]
+
+library(Cubist)
+
+exchange_model <- cubist(sample_exchange[-9], sample_exchange$Soybeans)
+
+exchange_model
+
+summary(exchange_model)
+
+model_pred <- predict(exchange_model, sample_exchange_test)
+
+cor(sample_exchange_test$Soybeans, model_pred)
+
+```

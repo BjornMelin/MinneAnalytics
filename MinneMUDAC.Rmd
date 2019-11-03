@@ -12,6 +12,7 @@ output: html_notebook
 us_markets <- read.csv("US_Markets.csv", stringsAsFactors = TRUE)
 us_suppliers <- read.csv("US_Suppliers.csv", stringsAsFactors = TRUE)
 us_competetor <- read.csv("Competetor_Markets.csv", stringsAsFactors = TRUE)
+
 #View(us_markets)
 #View(us_suppliers)
 #View(us_competetor)
@@ -82,10 +83,3 @@ summary(exchange_model_suppliers)
 model_pred_comp <- predict(exchange_model_comp, sample_exchange_comp_test)
 cor(sample_exchange_comp_test$Soybeans, model_pred_comp)
 ```
-
-
-
-
-
-
-
