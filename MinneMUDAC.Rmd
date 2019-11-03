@@ -1,0 +1,91 @@
+---
+title: "MinneMUDAC Data Analytics Competition"
+author: "Bjorn Melin"
+date: "10/24/19"
+output: html_notebook
+---
+
+## Load In Tidy Datasets For US Commodities:
+
+```{r}
+# Load the dataset
+us_markets <- read.csv("US_Markets.csv", stringsAsFactors = TRUE)
+us_suppliers <- read.csv("US_Suppliers.csv", stringsAsFactors = TRUE)
+us_competetor <- read.csv("Competetor_Markets.csv", stringsAsFactors = TRUE)
+#View(us_markets)
+#View(us_suppliers)
+#View(us_competetor)
+```
+
+
+## Run `Cubist` Algorithm To Find Features With High Correlation To Soybeans For US Markets:
+
+```{r}
+# Load the libraries we will need
+library(Cubist)
+library(psych)
+
+
+# Tidy the us_markets dataset by removing variables which will not be of interest
+us_markets_tidy <- us_markets[-c(1:4)]
+#View(us_markets_tidy)
+
+
+# Create the training and 
+sample_exchange_markets_train <- us_markets_tidy[1:400, ]
+sample_exchange_markets_test <- us_markets_tidy[401:600, ]
+
+# Run Cubist Algorithm On Training and Testing Datasets to predict Soybean
+exchange_model_markets <- cubist(sample_exchange_markets_train[-5], sample_exchange_markets_train$Soybeans)
+exchange_model_markets
+summary(exchange_model_markets)
+model_pred_markets <- predict(exchange_model_markets, sample_exchange_markets_test)
+cor(sample_exchange_markets_test$Soybeans, model_pred_markets)
+```
+
+
+## Run `Cubist` Algorithm To Find Features With High Correlation To Soybeans For US Suppliers:
+
+```{r}
+# Tidy the us_suppliers dataset by removing variables which will not be of interest
+us_suppliers_tidy <- us_suppliers[-c(1:3)]
+#View(us_suppliers_tidy)
+
+# Create the training and 
+sample_exchange_suppliers_train <- us_suppliers_tidy[1:400, ]
+sample_exchange_suppliers_test <- us_suppliers_tidy[401:600, ]
+
+# Run Cubist Algorithm On Training and Testing Datasets to predict Soybean
+exchange_model_suppliers <- cubist(sample_exchange_suppliers_train[-7], sample_exchange_suppliers_train$Oils..ex..Soybean.)
+exchange_model_suppliers
+summary(exchange_model_suppliers)
+model_pred_suppliers <- predict(exchange_model_suppliers, sample_exchange_suppliers_test)
+cor(sample_exchange_suppliers_test$Oils..ex..Soybean., model_pred_suppliers)
+```
+
+
+## Run `Cubist` Algorithm To Find Features With High Correlation To Soybeans For US Competitors:
+
+```{r}
+# Tidy the us_competetor dataset by removing variables which will not be of interest
+us_competetor_tidy <- us_competetor[-c(1:4)]
+#View(us_competetor_tidy)
+
+# Create the training and 
+sample_exchange_comp_train <- us_competetor_tidy[1:400, ]
+sample_exchange_comp_test <- us_competetor_tidy[401:600, ]
+
+# Run Cubist Algorithm On Training and Testing Datasets to predict Soybean
+exchange_model_comp <- cubist(sample_exchange_comp_train[-5], sample_exchange_comp_train$Soybeans)
+exchange_model_comp
+summary(exchange_model_suppliers)
+model_pred_comp <- predict(exchange_model_comp, sample_exchange_comp_test)
+cor(sample_exchange_comp_test$Soybeans, model_pred_comp)
+```
+
+
+
+
+
+
+
