@@ -1,8 +1,10 @@
 ---
 title: "MinneMUDAC Data Analytics Competition"
 author: "Bjorn Melin"
-date: "10/24/19"
-output: html_notebook
+date: "11/4/19"
+output:
+  html_document:
+    df_print: paged
 ---
 
 ## Load In Tidy Datasets For US Commodities:
@@ -12,11 +14,11 @@ output: html_notebook
 us_markets <- read.csv("US_Markets.csv", stringsAsFactors = TRUE)
 us_suppliers <- read.csv("US_Suppliers.csv", stringsAsFactors = TRUE)
 us_competetor <- read.csv("Competetor_Markets.csv", stringsAsFactors = TRUE)
-
 #View(us_markets)
 #View(us_suppliers)
 #View(us_competetor)
 ```
+
 
 
 ## Run `Cubist` Algorithm To Find Features With High Correlation To Soybeans For US Markets:
@@ -30,18 +32,20 @@ library(psych)
 # Tidy the us_markets dataset by removing variables which will not be of interest
 us_markets_tidy <- us_markets[-c(1:4)]
 #View(us_markets_tidy)
+str(us_markets_tidy)
 
+#pairs.panels(us_markets_tidy[1:25])
+#cor.plot(us_markets_tidy, MAR = TRUE, symmetric = TRUE)
 
 # Create the training and 
-sample_exchange_markets_train <- us_markets_tidy[1:400, ]
-sample_exchange_markets_test <- us_markets_tidy[401:600, ]
+sample_exchange_markets_train <- us_markets_tidy[1:600, ]
 
 # Run Cubist Algorithm On Training and Testing Datasets to predict Soybean
 exchange_model_markets <- cubist(sample_exchange_markets_train[-5], sample_exchange_markets_train$Soybeans)
 exchange_model_markets
 summary(exchange_model_markets)
-model_pred_markets <- predict(exchange_model_markets, sample_exchange_markets_test)
-cor(sample_exchange_markets_test$Soybeans, model_pred_markets)
+model_pred_markets <- predict(exchange_model_markets, us_markets_tidy)
+cor(us_markets_tidy$Soybeans, model_pred_markets)
 ```
 
 
@@ -83,3 +87,69 @@ summary(exchange_model_suppliers)
 model_pred_comp <- predict(exchange_model_comp, sample_exchange_comp_test)
 cor(sample_exchange_comp_test$Soybeans, model_pred_comp)
 ```
+
+
+
+```{r}
+# x is a matrix containing the data
+# method : correlation method. "pearson"" or "spearman"" is supported
+# removeTriangle : remove upper or lower triangle
+# results :  if "html" or "latex"
+  # the results will be displayed in html or latex format
+corstars <-function(x, method=c("pearson", "spearman"), removeTriangle=c("upper", "lower"),
+                     result=c("none", "html", "latex")){
+    #Compute correlation matrix
+    require(Hmisc)
+    x <- as.matrix(x)
+    correlation_matrix<-rcorr(x, type=method[1])
+    R <- correlation_matrix$r # Matrix of correlation coeficients
+    p <- correlation_matrix$P # Matrix of p-value 
+    
+    ## Define notions for significance levels; spacing is important.
+    mystars <- ifelse(p < .0001, "****", ifelse(p < .001, "*** ", ifelse(p < .01, "**  ", ifelse(p < .05, "*   ", "    "))))
+    
+    ## trunctuate the correlation matrix to two decimal
+    R <- format(round(cbind(rep(-1.11, ncol(x)), R), 2))[,-1]
+    
+    ## build a new matrix that includes the correlations with their apropriate stars
+    Rnew <- matrix(paste(R, mystars, sep=""), ncol=ncol(x))
+    diag(Rnew) <- paste(diag(R), " ", sep="")
+    rownames(Rnew) <- colnames(x)
+    colnames(Rnew) <- paste(colnames(x), "", sep="")
+    
+    ## remove upper triangle of correlation matrix
+    if(removeTriangle[1]=="upper"){
+      Rnew <- as.matrix(Rnew)
+      Rnew[upper.tri(Rnew, diag = TRUE)] <- ""
+      Rnew <- as.data.frame(Rnew)
+    }
+    
+    ## remove lower triangle of correlation matrix
+    else if(removeTriangle[1]=="lower"){
+      Rnew <- as.matrix(Rnew)
+      Rnew[lower.tri(Rnew, diag = TRUE)] <- ""
+      Rnew <- as.data.frame(Rnew)
+    }
+    
+    ## remove last column and return the correlation matrix
+    Rnew <- cbind(Rnew[1:length(Rnew)-1])
+    if (result[1]=="none") return(Rnew)
+    else{
+      if(result[1]=="html") print(xtable(Rnew), type="html")
+      else print(xtable(Rnew), type="latex") 
+    }
+} 
+```
+
+
+```{r}
+us_markets_tidy_cor <- round(cor(us_markets_tidy),2)
+# us_markets_tidy_cor
+
+cor_markets_plot <- corstars(us_markets_tidy_cor)
+cor_markets_plot
+```
+
+
+
+
