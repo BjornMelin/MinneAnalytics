@@ -1,0 +1,96 @@
+---
+title: "MinneMUDAC Data Analytics Competition Visualizations"
+author: "Bjorn Melin"
+date: "11/7/2019"
+output: html_document
+---
+
+## Questions To Answer With Data:  
+1.  What trends do you see in U.S. soybean exports?
+2.  What seasonality do you see in the data?
+3.  Do you see any relationships between commodity exports (substitutable products: corn/soybeans)?
+4.  Are we trade neutral for agricultural products in a given month/year (consider columns past BE)?
+5.  Does competitor exports of soybeans (column AK) impact US exports of soybeans?
+
+\  
+\  
+\  
+\   
+
+
+## Load In Tidy Datasets W/ Only Highly Correlated Features To Soybeans:
+
+```{r}
+# Load the dataset
+us_competitor_top_corr <- read.csv("us_competitor_top_corr.csv", stringsAsFactors = TRUE)
+us_suppliers_top_corr <- read.csv("us_suppliers_top_corr.csv", stringsAsFactors = TRUE)
+us_markets_top_corr <- read.csv("us_markets_top_corr.csv", stringsAsFactors = TRUE)
+
+subset(ChickWeight, Diet==4 && Time == 21)
+
+us_competitor_top_corr
+us_suppliers_top_corr
+us_markets_top_corr
+```  
+
+
+## Modify Datasets To Only Include Data Since 2005:  
+
+```{r}
+us_competitor_subset <- subset(us_competitor_top_corr, Year>=2010) %>% 
+  unite("Date", Month:Year, sep="/", remove=TRUE)
+us_suppliers_subset <- subset(us_suppliers_top_corr, Year>=2010) %>% 
+  unite("Date", Month:Year, sep="/", remove=TRUE)
+us_markets_subset <- subset(us_markets_top_corr, Year>=2010) %>% 
+  unite("Date", Month:Year, sep="/", remove=TRUE)
+
+us_competitor_subset
+us_suppliers_subset
+us_markets_subset
+
+
+write.csv(us_competitor_subset, "us_competitor_subset.csv", row.names = FALSE)
+write.csv(us_suppliers_subset, "us_suppliers_subset.csv", row.names = FALSE)
+write.csv(us_markets_subset, "us_markets_subset.csv", row.names = FALSE)
+```
+
+
+
+
+## Trends Seen In US Soybean Exports Since 2005:
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+
+plot(us_markets_subset$Soybeans, type="l", xlab="Date", ylab="Soybean Exchange Rate",
+     main="US Market Soybean Exchange Rates (2010-2019)")
+```
+
+
+## Trends Seen In US Soybean Exports Since 1970:
+
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+
+us_markets_date <- us_markets_top_corr %>% 
+  unite("Date", Month:Year, sep="/", remove=TRUE)
+
+plot(us_markets_date$Soybeans, type="l", xlab="Date", ylab="Soybean Exchange Rate",
+     main="US Market Soybean Exchange Rates (1970-2019)")
+```
+
+
+
+## Seasonality In US Markets Data:
+
+
+## Seasonality In US Competitor Data:
+
+
+## Seasonality In US Markets Data:
+
+
+
