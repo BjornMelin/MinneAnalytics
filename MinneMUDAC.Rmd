@@ -1,11 +1,13 @@
 ---
 title: "MinneMUDAC Data Analytics Competition"
 author: "Bjorn Melin"
-date: "11/4/19"
+date: "10/24/19"
 output:
   html_document:
     df_print: paged
 ---
+
+
 
 ## Load In Tidy Datasets For US Commodities:
 
@@ -13,11 +15,15 @@ output:
 # Load the dataset
 us_markets <- read.csv("US_Markets.csv", stringsAsFactors = TRUE)
 us_suppliers <- read.csv("US_Suppliers.csv", stringsAsFactors = TRUE)
-us_competetor <- read.csv("Competetor_Markets.csv", stringsAsFactors = TRUE)
-#View(us_markets)
-#View(us_suppliers)
-#View(us_competetor)
-```
+# Rename a the Soybeans feature in us_suppliers
+colnames(us_suppliers)[colnames(us_suppliers)=="Oils..ex..Soybean." ] <- "Soybeans"
+
+us_competitor <- read.csv("competitor_Markets.csv", stringsAsFactors = TRUE)
+#us_markets
+#us_suppliers
+#us_competitor
+#us_markets
+```  
 
 
 
@@ -28,10 +34,9 @@ us_competetor <- read.csv("Competetor_Markets.csv", stringsAsFactors = TRUE)
 library(Cubist)
 library(psych)
 
-
 # Tidy the us_markets dataset by removing variables which will not be of interest
 us_markets_tidy <- us_markets[-c(1:4)]
-#View(us_markets_tidy)
+#us_markets_tidy
 str(us_markets_tidy)
 
 #pairs.panels(us_markets_tidy[1:25])
@@ -49,44 +54,91 @@ cor(us_markets_tidy$Soybeans, model_pred_markets)
 ```
 
 
+
+
 ## Run `Cubist` Algorithm To Find Features With High Correlation To Soybeans For US Suppliers:
 
 ```{r}
 # Tidy the us_suppliers dataset by removing variables which will not be of interest
 us_suppliers_tidy <- us_suppliers[-c(1:3)]
-#View(us_suppliers_tidy)
+#(us_suppliers_tidy)
 
 # Create the training and 
-sample_exchange_suppliers_train <- us_suppliers_tidy[1:400, ]
-sample_exchange_suppliers_test <- us_suppliers_tidy[401:600, ]
+sample_exchange_suppliers_train <- us_suppliers_tidy[1:600, ]
 
 # Run Cubist Algorithm On Training and Testing Datasets to predict Soybean
-exchange_model_suppliers <- cubist(sample_exchange_suppliers_train[-7], sample_exchange_suppliers_train$Oils..ex..Soybean.)
+exchange_model_suppliers <- cubist(sample_exchange_suppliers_train[-7], sample_exchange_suppliers_train$Soybeans)
 exchange_model_suppliers
 summary(exchange_model_suppliers)
-model_pred_suppliers <- predict(exchange_model_suppliers, sample_exchange_suppliers_test)
-cor(sample_exchange_suppliers_test$Oils..ex..Soybean., model_pred_suppliers)
+model_pred_suppliers <- predict(exchange_model_suppliers, us_suppliers_tidy)
+cor(us_suppliers_tidy$Soybeans, model_pred_suppliers)
 ```
+
+
+
+
 
 
 ## Run `Cubist` Algorithm To Find Features With High Correlation To Soybeans For US Competitors:
 
 ```{r}
-# Tidy the us_competetor dataset by removing variables which will not be of interest
-us_competetor_tidy <- us_competetor[-c(1:4)]
-#View(us_competetor_tidy)
+# Tidy the us_competitor dataset by removing variables which will not be of interest
+us_competitor_tidy <- us_competitor[-c(1:4)]
+us_competitor_tidy
 
 # Create the training and 
-sample_exchange_comp_train <- us_competetor_tidy[1:400, ]
-sample_exchange_comp_test <- us_competetor_tidy[401:600, ]
+sample_exchange_comp_train <- us_competitor_tidy[1:600, ]
 
 # Run Cubist Algorithm On Training and Testing Datasets to predict Soybean
 exchange_model_comp <- cubist(sample_exchange_comp_train[-5], sample_exchange_comp_train$Soybeans)
 exchange_model_comp
-summary(exchange_model_suppliers)
-model_pred_comp <- predict(exchange_model_comp, sample_exchange_comp_test)
-cor(sample_exchange_comp_test$Soybeans, model_pred_comp)
+summary(exchange_model_comp)
+model_pred_comp <- predict(exchange_model_comp, us_competitor_tidy)
+cor(us_competitor_tidy$Soybeans, model_pred_comp)
 ```
+
+
+
+#### Remove All Vars Below 90% Correlated To Soybeans From US Markets DF:
+
+```{r}
+# Create a new tidied data frame only containing 
+# variables which are above 90% correlated with Soybeans
+us_markets_top_corr <- us_markets[c("Month", "Year", "U.S..merchandise.exports.to.the.World",   
+                                    "U.S..agricultural.exports.to.the.World", "Soybeans", "Hides...Skins", 
+                                    "Wheat", "Corn", "Bulk", "Cotton", "Wine...Beer")]
+us_markets_top_corr
+```
+
+
+## Remove All Vars Below 90% Correlated To Soybeans From Suppliers DF:
+
+```{r}
+# Create a new tidied data frame only containing 
+# variables which are above 90% correlated with Soybeans
+us_suppliers_top_corr <- us_suppliers[c("Month", "Year", "U.S..agricultural.imports",   
+                                     "Soybeans", "Intermediates", "Fish.Products", 
+                                     "Cocoa.Paste....Butter", "Coffee..Unroasted",
+                                     "Chocolate...Cocoa.Products")]
+us_suppliers_top_corr
+```
+
+
+
+## Remove All Vars Below 90% Correlated To Soybeans From US competitors DF:
+
+```{r}
+# Create a new tidied data frame only containing 
+# variables which are above 90% correlated with Soybeans
+us_competitor_top_corr <- us_competitor[c("Month", "Year", "Competitor.merchandise.exports.to.the.World" ,   
+                                    "Competitor.agricultural.exports.to.the.World", "Soybeans", 
+                                    "Tobacco", "Corn", "Soymeal", "Bulk", "Rice", "Tree.Nuts",
+                                    "Dairy.Products", "Fresh...Processed.Fruit",
+                                    "Fresh...Processed.Vegetables", "Beef...Beef.Products",
+                                    "Wine...Beer")]
+us_competitor_top_corr
+```
+
 
 
 
