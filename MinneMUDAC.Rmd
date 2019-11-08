@@ -137,6 +137,8 @@ us_competitor_top_corr <- us_competitor[c("Month", "Year", "Competitor.merchandi
                                     "Fresh...Processed.Vegetables", "Beef...Beef.Products",
                                     "Wine...Beer")]
 us_competitor_top_corr
+corr <- data.class(us_competitor_top_corr)
+corr
 ```
 
 
@@ -200,6 +202,53 @@ us_markets_tidy_cor <- round(cor(us_markets_tidy),2)
 
 cor_markets_plot <- corstars(us_markets_tidy_cor)
 cor_markets_plot
+```
+
+# Heatmap that displays the correlation amongst the features in us_markets_tidy_cor
+
+```{r}
+# heatmap displaying correlation amongst the features of us_markets_tidy_cor
+
+library(reshape2)
+mealted_us_markets_tidy_cor <- melt(us_markets_tidy_cor)
+head(mealted_us_markets_tidy_cor)
+ggheatmap <- ggplot(data = mealted_us_markets_tidy_cor, aes(x=Var1, y=Var2, fill = value)) + geom_tile(color = "white") + scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0, limit = c(-1, 1), space = "Lab", name = "US markets correlation") + theme_minimal() + theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 12, hjust = 1)) + coord_fixed()
+
+## adds the correlation values to the map
+ggheatmap + geom_text(aes(Var1, Var2, label = value), color = "black", size = 1.5)
+```
+
+# Heatmap that displays the correlation amongst the features in us_competitor_tidy
+
+```{r}
+us_competitor_tidy_cor <- round(cor(us_competitor_tidy), 2)
+
+# heatmap displaying correlation amongst the features of us_markets_tidy_cor
+
+library(reshape2)
+mealted_us_competitor_tidy_cor <- melt(us_competitor_tidy_cor)
+head(mealted_us_competitor_tidy_cor)
+ggheatmap_competitor <- ggplot(data = mealted_us_competitor_tidy_cor, aes(x=Var1, y=Var2, fill = value)) + geom_tile(color = "white") + scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0, limit = c(-1, 1), space = "Lab", name = "US Competitor correlation") + theme_minimal() + theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 12, hjust = 1)) + coord_fixed()
+
+## adds the correlation values to the map
+ggheatmap_competitor + geom_text(aes(Var1, Var2, label = value), color = "black", size = 1.5)
+
+```
+
+# Heatmap that displays the correlation amongst the features in us_suppliers_tidy
+
+```{r}
+us_suppliers_tidy_cor <- round(cor(us_suppliers_tidy), 2)
+
+# heatmap displaying correlation amongst the features of us_markets_tidy_cor
+
+library(reshape2)
+mealted_us_suppliers_tidy_cor <- melt(us_suppliers_tidy_cor)
+head(mealted_us_suppliers_tidy_cor)
+ggheatmap_suppliers <- ggplot(data = mealted_us_suppliers_tidy_cor, aes(x=Var1, y=Var2, fill = value)) + geom_tile(color = "white") + scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0, limit = c(-1, 1), space = "Lab", name = "US Competitor correlation") + theme_minimal() + theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 12, hjust = 1)) + coord_fixed()
+
+## adds the correlation values to the map
+ggheatmap_suppliers + geom_text(aes(Var1, Var2, label = value), color = "black", size = 1.5)
 ```
 
 
