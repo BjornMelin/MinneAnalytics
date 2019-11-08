@@ -26,7 +26,6 @@ us_competitor_top_corr <- read.csv("us_competitor_top_corr.csv", stringsAsFactor
 us_suppliers_top_corr <- read.csv("us_suppliers_top_corr.csv", stringsAsFactors = TRUE)
 us_markets_top_corr <- read.csv("us_markets_top_corr.csv", stringsAsFactors = TRUE)
 
-subset(ChickWeight, Diet==4 && Time == 21)
 
 us_competitor_top_corr
 us_suppliers_top_corr
@@ -34,7 +33,7 @@ us_markets_top_corr
 ```  
 
 
-## Modify Datasets To Only Include Data Since 2005:  
+## Modify Datasets To Only Include Data Since 2010:  
 
 ```{r}
 us_competitor_subset <- subset(us_competitor_top_corr, Year>=2010) %>% 
@@ -46,7 +45,7 @@ us_markets_subset <- subset(us_markets_top_corr, Year>=2010) %>%
 
 us_competitor_subset
 us_suppliers_subset
-us_markets_subset
+View(us_markets_subset)
 
 
 write.csv(us_competitor_subset, "us_competitor_subset.csv", row.names = FALSE)
@@ -60,11 +59,9 @@ write.csv(us_markets_subset, "us_markets_subset.csv", row.names = FALSE)
 ## Trends Seen In US Soybean Exports Since 2005:
 
 ```{r}
-library(tidyverse)
-library(ggplot2)
-
-plot(us_markets_subset$Soybeans, type="l", xlab="Date", ylab="Soybean Exchange Rate",
+plot(us_markets_subset$Soybeans, type="l", xlab="Months Since Jan 2010", ylab="Soybean Exchange Rate",
      main="US Market Soybean Exchange Rates (2010-2019)")
+
 ```
 
 
@@ -78,19 +75,34 @@ library(ggplot2)
 us_markets_date <- us_markets_top_corr %>% 
   unite("Date", Month:Year, sep="/", remove=TRUE)
 
-plot(us_markets_date$Soybeans, type="l", xlab="Date", ylab="Soybean Exchange Rate",
+plot(us_markets_date$Soybeans, type="l", xlab="Months Since Jan 1970", ylab="Soybean Exchange Rate",
      main="US Market Soybean Exchange Rates (1970-2019)")
+
+ggplot(data=us_markets_top_corr, aes(x=Year, y=Soybeans, group=Month)) +
+  geom_line(color=us_markets_top_corr$Month) 
 ```
 
 
 
 ## Seasonality In US Markets Data:
 
+```{r}
+
+```
+
 
 ## Seasonality In US Competitor Data:
+
+```{r}
+
+```
 
 
 ## Seasonality In US Markets Data:
 
+```{r}
+
+
+```
 
 
