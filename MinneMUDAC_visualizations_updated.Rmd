@@ -1,0 +1,348 @@
+---
+title: "MinneMUDAC Data Analytics Competition Visualizations"
+date: "11/8/2019"
+output: html_document
+---
+
+## Questions To Answer With Data:  
+1.  What trends do you see in U.S. soybean exports?
+2.  What seasonality do you see in the data?
+3.  Do you see any relationships between commodity exports (substitutable products: corn/soybeans)?
+4.  Are we trade neutral for agricultural products in a given month/year (consider columns past BE)?
+5.  Does competitor exports of soybeans (column AK) impact US exports of soybeans?
+
+\  
+\  
+\  
+\   
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+library(rvest)
+library(methods)
+library(tidyverse)
+library(lubridate)
+```
+
+## Load In Tidy Datasets W/ Only Highly Correlated Features To Soybeans:
+
+```{r}
+# Load the dataset
+us_competitor_top_corr <- read.csv("us_competitor_top_corr.csv", stringsAsFactors = TRUE)
+us_suppliers_top_corr <- read.csv("us_suppliers_top_corr.csv", stringsAsFactors = TRUE)
+us_markets_top_corr <- read.csv("us_markets_top_corr.csv", stringsAsFactors = TRUE)
+
+subset(ChickWeight, Diet==4 && Time == 21)
+
+us_competitor_top_corr
+us_suppliers_top_corr
+us_markets_top_corr
+```  
+
+
+## Modify Datasets To Only Include Data Since 2010:  
+
+```{r}
+us_competitor_subset <- subset(us_competitor_top_corr, Year>=2010) %>% 
+  unite("Date", Month:Year, sep="/", remove=TRUE) %>% 
+  separate(`Date`,c("Month","Year"),sep="/") %>% 
+  mutate('Season' = c("Winter","Winter","Spring","Spring","Spring","Summer","Summer","Summer","Fall","Fall","Fall","Winter","Winter","Winter","Spring","Spring","Spring","Summer","Summer","Summer","Fall","Fall","Fall","Winter","Winter","Winter","Spring","Spring","Spring","Summer","Summer","Summer","Fall","Fall","Fall","Winter","Winter","Winter","Spring","Spring","Spring","Summer","Summer","Summer","Fall","Fall","Fall","Winter","Winter","Winter","Spring","Spring","Spring","Summer","Summer","Summer","Fall","Fall","Fall","Winter","Winter","Winter","Spring","Spring","Spring","Summer","Summer","Summer","Fall","Fall","Fall","Winter","Winter","Winter","Spring","Spring","Spring","Summer","Summer","Summer","Fall","Fall","Fall","Winter","Winter","Winter","Spring","Spring","Spring","Summer","Summer","Summer","Fall","Fall","Fall","Winter","Winter","Winter","Spring","Spring","Spring","Summer","Summer","Summer","Fall","Fall","Fall","Winter","Winter","Winter","Spring","Spring","Spring","Summer","Summer","Summer","Fall","Fall","Fall","Winter")) %>% 
+  select(2,3,18,4:17)
+us_competitor_subset$Month = as.numeric(as.character(us_competitor_subset$Month))
+us_competitor_subset$Year = as.numeric(as.character(us_competitor_subset$Year))
+
+us_suppliers_subset <- subset(us_suppliers_top_corr, Year>=2010) %>% 
+  unite("Date", Month:Year, sep="/", remove=TRUE) %>% 
+  separate(`Date`,c("Month","Year"),sep="/") %>% 
+  mutate('Season' = c("Winter","Winter","Spring","Spring","Spring","Summer","Summer","Summer","Fall","Fall","Fall","Winter","Winter","Winter","Spring","Spring","Spring","Summer","Summer","Summer","Fall","Fall","Fall","Winter","Winter","Winter","Spring","Spring","Spring","Summer","Summer","Summer","Fall","Fall","Fall","Winter","Winter","Winter","Spring","Spring","Spring","Summer","Summer","Summer","Fall","Fall","Fall","Winter","Winter","Winter","Spring","Spring","Spring","Summer","Summer","Summer","Fall","Fall","Fall","Winter","Winter","Winter","Spring","Spring","Spring","Summer","Summer","Summer","Fall","Fall","Fall","Winter","Winter","Winter","Spring","Spring","Spring","Summer","Summer","Summer","Fall","Fall","Fall","Winter","Winter","Winter","Spring","Spring","Spring","Summer","Summer","Summer","Fall","Fall","Fall","Winter","Winter","Winter","Spring","Spring","Spring","Summer","Summer","Summer","Fall","Fall","Fall","Winter","Winter","Winter","Spring","Spring","Spring","Summer","Summer","Summer","Fall","Fall","Fall","Winter")) %>% 
+  select(2,3,11,4:10)
+us_suppliers_subset$Month = as.numeric(as.character(us_suppliers_subset$Month))
+us_suppliers_subset$Year = as.numeric(as.character(us_suppliers_subset$Year))
+  
+us_markets_subset <- subset(us_markets_top_corr, Year>=2010) %>% 
+  unite("Date", Month:Year, sep="/", remove=TRUE) %>% 
+  separate(`Date`,c("Month","Year"),sep="/") %>% 
+  mutate('Season' = c("Winter","Winter","Spring","Spring","Spring","Summer","Summer","Summer","Fall","Fall","Fall","Winter","Winter","Winter","Spring","Spring","Spring","Summer","Summer","Summer","Fall","Fall","Fall","Winter","Winter","Winter","Spring","Spring","Spring","Summer","Summer","Summer","Fall","Fall","Fall","Winter","Winter","Winter","Spring","Spring","Spring","Summer","Summer","Summer","Fall","Fall","Fall","Winter","Winter","Winter","Spring","Spring","Spring","Summer","Summer","Summer","Fall","Fall","Fall","Winter","Winter","Winter","Spring","Spring","Spring","Summer","Summer","Summer","Fall","Fall","Fall","Winter","Winter","Winter","Spring","Spring","Spring","Summer","Summer","Summer","Fall","Fall","Fall","Winter","Winter","Winter","Spring","Spring","Spring","Summer","Summer","Summer","Fall","Fall","Fall","Winter","Winter","Winter","Spring","Spring","Spring","Summer","Summer","Summer","Fall","Fall","Fall","Winter","Winter","Winter","Spring","Spring","Spring","Summer","Summer","Summer","Fall","Fall","Fall","Winter")) %>% 
+  select(2,3,13,4:12)
+us_markets_subset$Month = as.numeric(as.character(us_markets_subset$Month))
+us_markets_subset$Year = as.numeric(as.character(us_markets_subset$Year))
+
+us_competitor_subset
+us_suppliers_subset
+us_markets_subset
+
+write.csv(us_competitor_subset, "us_competitor_subset.csv", row.names = FALSE)
+write.csv(us_suppliers_subset, "us_suppliers_subset.csv", row.names = FALSE)
+write.csv(us_markets_subset, "us_markets_subset.csv", row.names = FALSE)
+```
+
+
+
+
+## Trends Seen In US Soybean Exports Since 2010:
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+
+plot(us_markets_subset$Soybeans, type="l", xlab="Month (Since January 2010)", ylab="Soybean Exchange Rate",main="US Market Soybean Exchange Rates (2010-2019)")
+```
+
+
+## Trends Seen In US Soybean Exports Since 1970:
+
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+
+us_markets_date <- us_markets_top_corr %>% 
+  unite("Date", Month:Year, sep="/", remove=TRUE) %>%
+  select(-1) %>% 
+  mutate('Month' = c(1:600)) %>% 
+  select(1,11,2:10)
+
+fit1 <- lm(Soybeans ~ Month, data = us_markets_date)
+summary(fit1)
+
+plot(us_markets_date$Soybeans, xlab="Months (Since January 1, 1970)", ylab="Soybean Exchange Rate",main="US Market Soybean Exchange Rates (1970-2019)")
+
+ggplot(data=us_markets_date) + geom_point(aes(x=Month,y=Soybeans)) + theme(axis.text = element_text(size=10),axis.title=element_text(size=10),title=element_text(size=10)) + xlab("Months (Since January 1, 1970)") + ylab("Soybean Exchange Rate") + ggtitle("US Market Soybean Exchange Rates (1970-2019)")
+```
+
+
+
+## Seasonality In US Markets Data:
+```{r}
+us_markets_2010 <- us_markets_subset %>% 
+  filter(Year == '2010')
+us_markets_2011 <- us_markets_subset %>% 
+  filter(Year == '2011')
+us_markets_2012 <- us_markets_subset %>% 
+  filter(Year == '2012')
+us_markets_2013 <- us_markets_subset %>% 
+  filter(Year == '2013')
+us_markets_2014 <- us_markets_subset %>% 
+  filter(Year == '2014')
+us_markets_2015 <- us_markets_subset %>% 
+  filter(Year == '2015')
+us_markets_2016 <- us_markets_subset %>% 
+  filter(Year == '2016')
+us_markets_2017 <- us_markets_subset %>% 
+  filter(Year == '2017')
+us_markets_2018 <- us_markets_subset %>% 
+  filter(Year == '2018')
+
+us_markets_January <- us_markets_subset %>% 
+  filter(Month == 1)
+us_markets_January_Avg <- mean(us_markets_January$Soybeans)
+us_markets_February <- us_markets_subset %>% 
+  filter(Month == 2)
+us_markets_February_Avg <- mean(us_markets_February$Soybeans)
+us_markets_March <- us_markets_subset %>% 
+  filter(Month == 3)
+us_markets_March_Avg <- mean(us_markets_March$Soybeans)
+us_markets_April <- us_markets_subset %>% 
+  filter(Month == 4)
+us_markets_April_Avg <- mean(us_markets_April$Soybeans)
+us_markets_May <- us_markets_subset %>% 
+  filter(Month == 5)
+us_markets_May_Avg <- mean(us_markets_May$Soybeans)
+us_markets_June <- us_markets_subset %>% 
+  filter(Month == 6)
+us_markets_June_Avg <- mean(us_markets_June$Soybeans)
+us_markets_July <- us_markets_subset %>% 
+  filter(Month == 7)
+us_markets_July_Avg <- mean(us_markets_July$Soybeans)
+us_markets_August <- us_markets_subset %>% 
+  filter(Month == 8)
+us_markets_August_Avg <- mean(us_markets_August$Soybeans)
+us_markets_September <- us_markets_subset %>% 
+  filter(Month == 9)
+us_markets_September_Avg <- mean(us_markets_September$Soybeans)
+us_markets_October <- us_markets_subset %>% 
+  filter(Month == 10)
+us_markets_October_Avg <- mean(us_markets_October$Soybeans)
+us_markets_November <- us_markets_subset %>% 
+  filter(Month == 11)
+us_markets_November_Avg <- mean(us_markets_November$Soybeans)
+us_markets_December <- us_markets_subset %>% 
+  filter(Month == 12)
+us_markets_December_Avg <- mean(us_markets_December$Soybeans)
+
+plot(us_markets_2010$Soybeans, type="l", xlab="Month", ylab="Soybean Exchange Rate",
+     main="US Market Soybean Exchange Rates (2010)")
+plot(us_markets_2011$Soybeans, type="l", xlab="Month", ylab="Soybean Exchange Rate",
+     main="US Market Soybean Exchange Rates (2011)")
+plot(us_markets_2012$Soybeans, type="l", xlab="Month", ylab="Soybean Exchange Rate",
+     main="US Market Soybean Exchange Rates (2012)")
+plot(us_markets_2013$Soybeans, type="l", xlab="Month", ylab="Soybean Exchange Rate",
+     main="US Market Soybean Exchange Rates (2013)")
+plot(us_markets_2014$Soybeans, type="l", xlab="Month", ylab="Soybean Exchange Rate",
+     main="US Market Soybean Exchange Rates (2014)")
+plot(us_markets_2015$Soybeans, type="l", xlab="Month", ylab="Soybean Exchange Rate",
+     main="US Market Soybean Exchange Rates (2015)")
+plot(us_markets_2016$Soybeans, type="l", xlab="Month", ylab="Soybean Exchange Rate",
+     main="US Market Soybean Exchange Rates (2016)")
+plot(us_markets_2017$Soybeans, type="l", xlab="Month", ylab="Soybean Exchange Rate",
+     main="US Market Soybean Exchange Rates (2017)")
+plot(us_markets_2018$Soybeans, type="l", xlab="Month", ylab="Soybean Exchange Rate",
+     main="US Market Soybean Exchange Rates (2018)")
+```
+
+## Seasonality In US Supplier Data:
+```{r}
+us_suppliers_2010 <- us_suppliers_subset %>% 
+  filter(Year == '2010')
+us_suppliers_2011 <- us_suppliers_subset %>% 
+  filter(Year == '2011')
+us_suppliers_2012 <- us_suppliers_subset %>% 
+  filter(Year == '2012')
+us_suppliers_2013 <- us_suppliers_subset %>% 
+  filter(Year == '2013')
+us_suppliers_2014 <- us_suppliers_subset %>% 
+  filter(Year == '2014')
+us_suppliers_2015 <- us_suppliers_subset %>% 
+  filter(Year == '2015')
+us_suppliers_2016 <- us_suppliers_subset %>% 
+  filter(Year == '2016')
+us_suppliers_2017 <- us_suppliers_subset %>% 
+  filter(Year == '2017')
+us_suppliers_2018 <- us_suppliers_subset %>% 
+  filter(Year == '2018')
+
+us_suppliers_January <- us_suppliers_subset %>% 
+  filter(Month == 1)
+us_suppliers_January_Avg <- mean(us_suppliers_January$Soybeans)
+us_suppliers_February <- us_suppliers_subset %>% 
+  filter(Month == 2)
+us_suppliers_February_Avg <- mean(us_suppliers_February$Soybeans)
+us_suppliers_March <- us_suppliers_subset %>% 
+  filter(Month == 3)
+us_suppliers_March_Avg <- mean(us_suppliers_March$Soybeans)
+us_suppliers_April <- us_suppliers_subset %>% 
+  filter(Month == 4)
+us_suppliers_April_Avg <- mean(us_suppliers_April$Soybeans)
+us_suppliers_May <- us_suppliers_subset %>% 
+  filter(Month == 5)
+us_suppliers_May_Avg <- mean(us_suppliers_May$Soybeans)
+us_suppliers_June <- us_suppliers_subset %>% 
+  filter(Month == 6)
+us_suppliers_June_Avg <- mean(us_suppliers_June$Soybeans)
+us_suppliers_July <- us_suppliers_subset %>% 
+  filter(Month == 7)
+us_suppliers_July_Avg <- mean(us_suppliers_July$Soybeans)
+us_suppliers_August <- us_suppliers_subset %>% 
+  filter(Month == 8)
+us_suppliers_August_Avg <- mean(us_suppliers_August$Soybeans)
+us_suppliers_September <- us_suppliers_subset %>% 
+  filter(Month == 9)
+us_suppliers_September_Avg <- mean(us_suppliers_September$Soybeans)
+us_suppliers_October <- us_suppliers_subset %>% 
+  filter(Month == 10)
+us_suppliers_October_Avg <- mean(us_suppliers_October$Soybeans)
+us_suppliers_November <- us_suppliers_subset %>% 
+  filter(Month == 11)
+us_suppliers_November_Avg <- mean(us_suppliers_November$Soybeans)
+us_suppliers_December <- us_suppliers_subset %>% 
+  filter(Month == 12)
+us_suppliers_December_Avg <- mean(us_suppliers_December$Soybeans)
+
+plot(us_suppliers_2010$Soybeans, type="l", xlab="Month", ylab="Soybean Exchange Rate",
+     main="US Supplier Soybean Exchange Rates (2010)")
+plot(us_suppliers_2011$Soybeans, type="l", xlab="Month", ylab="Soybean Exchange Rate",
+     main="US Supplier Soybean Exchange Rates (2011)")
+plot(us_suppliers_2012$Soybeans, type="l", xlab="Month", ylab="Soybean Exchange Rate",
+     main="US Supplier Soybean Exchange Rates (2012)")
+plot(us_suppliers_2013$Soybeans, type="l", xlab="Month", ylab="Soybean Exchange Rate",
+     main="US Supplier Soybean Exchange Rates (2013)")
+plot(us_suppliers_2014$Soybeans, type="l", xlab="Month", ylab="Soybean Exchange Rate",
+     main="US Supplier Soybean Exchange Rates (2014)")
+plot(us_suppliers_2015$Soybeans, type="l", xlab="Month", ylab="Soybean Exchange Rate",
+     main="US Supplier Soybean Exchange Rates (2015)")
+plot(us_suppliers_2016$Soybeans, type="l", xlab="Month", ylab="Soybean Exchange Rate",
+     main="US Supplier Soybean Exchange Rates (2016)")
+plot(us_suppliers_2017$Soybeans, type="l", xlab="Month", ylab="Soybean Exchange Rate",
+     main="US Supplier Soybean Exchange Rates (2017)")
+plot(us_suppliers_2018$Soybeans, type="l", xlab="Month", ylab="Soybean Exchange Rate",
+     main="US Supplier Soybean Exchange Rates (2018)")
+```
+
+## Seasonality In US Competitor Data:
+```{r}
+us_competitor_2010 <- us_competitor_subset %>% 
+  filter(Year == '2010')
+us_competitor_2011 <- us_competitor_subset %>% 
+  filter(Year == '2011')
+us_competitor_2012 <- us_competitor_subset %>% 
+  filter(Year == '2012')
+us_competitor_2013 <- us_competitor_subset %>% 
+  filter(Year == '2013')
+us_competitor_2014 <- us_competitor_subset %>% 
+  filter(Year == '2014')
+us_competitor_2015 <- us_competitor_subset %>% 
+  filter(Year == '2015')
+us_competitor_2016 <- us_competitor_subset %>% 
+  filter(Year == '2016')
+us_competitor_2017 <- us_competitor_subset %>% 
+  filter(Year == '2017')
+us_competitor_2018 <- us_competitor_subset %>% 
+  filter(Year == '2018')
+
+us_competitor_January <- us_competitor_subset %>% 
+  filter(Month == 1)
+us_competitor_January_Avg <- mean(us_competitor_January$Soybeans)
+us_competitor_February <- us_competitor_subset %>% 
+  filter(Month == 2)
+us_competitor_February_Avg <- mean(us_competitor_February$Soybeans)
+us_competitor_March <- us_competitor_subset %>% 
+  filter(Month == 3)
+us_competitor_March_Avg <- mean(us_competitor_March$Soybeans)
+us_competitor_April <- us_competitor_subset %>% 
+  filter(Month == 4)
+us_competitor_April_Avg <- mean(us_competitor_April$Soybeans)
+us_competitor_May <- us_competitor_subset %>% 
+  filter(Month == 5)
+us_competitor_May_Avg <- mean(us_competitor_May$Soybeans)
+us_competitor_June <- us_competitor_subset %>% 
+  filter(Month == 6)
+us_competitor_June_Avg <- mean(us_competitor_June$Soybeans)
+us_competitor_July <- us_competitor_subset %>% 
+  filter(Month == 7)
+us_competitor_July_Avg <- mean(us_competitor_July$Soybeans)
+us_competitor_August <- us_competitor_subset %>% 
+  filter(Month == 8)
+us_competitor_August_Avg <- mean(us_competitor_August$Soybeans)
+us_competitor_September <- us_competitor_subset %>% 
+  filter(Month == 9)
+us_competitor_September_Avg <- mean(us_competitor_September$Soybeans)
+us_competitor_October <- us_competitor_subset %>% 
+  filter(Month == 10)
+us_competitor_October_Avg <- mean(us_competitor_October$Soybeans)
+us_competitor_November <- us_competitor_subset %>% 
+  filter(Month == 11)
+us_competitor_November_Avg <- mean(us_competitor_November$Soybeans)
+us_competitor_December <- us_competitor_subset %>% 
+  filter(Month == 12)
+us_competitor_December_Avg <- mean(us_competitor_December$Soybeans)
+
+plot(us_competitor_2010$Soybeans, type="l", xlab="Month", ylab="Soybean Exchange Rate",
+     main="US Competitor Soybean Exchange Rates (2010)")
+plot(us_competitor_2011$Soybeans, type="l", xlab="Month", ylab="Soybean Exchange Rate",
+     main="US Competitor Soybean Exchange Rates (2011)")
+plot(us_competitor_2012$Soybeans, type="l", xlab="Month", ylab="Soybean Exchange Rate",
+     main="US Competitor Soybean Exchange Rates (2012)")
+plot(us_competitor_2013$Soybeans, type="l", xlab="Month", ylab="Soybean Exchange Rate",
+     main="US Competitor Soybean Exchange Rates (2013)")
+plot(us_competitor_2014$Soybeans, type="l", xlab="Month", ylab="Soybean Exchange Rate",
+     main="US Competitor Soybean Exchange Rates (2014)")
+plot(us_competitor_2015$Soybeans, type="l", xlab="Month", ylab="Soybean Exchange Rate",
+     main="US Competitor Soybean Exchange Rates (2015)")
+plot(us_competitor_2016$Soybeans, type="l", xlab="Month", ylab="Soybean Exchange Rate",
+     main="US Competitor Soybean Exchange Rates (2016)")
+plot(us_competitor_2017$Soybeans, type="l", xlab="Month", ylab="Soybean Exchange Rate",
+     main="US Competitor Soybean Exchange Rates (2017)")
+plot(us_competitor_2018$Soybeans, type="l", xlab="Month", ylab="Soybean Exchange Rate",
+     main="US Competitor Soybean Exchange Rates (2018)")
+```
+
+
+
