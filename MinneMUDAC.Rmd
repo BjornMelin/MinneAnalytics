@@ -1,6 +1,6 @@
 ---
 title: "MinneMUDAC Data Analytics Competition"
-author: "Bjorn Melin"
+author: "Bjorn Melin, Carter Duncan, Dayton Danielson, Andy Hotchkiss"
 date: "10/24/19"
 output:
   html_document:
@@ -16,6 +16,7 @@ library(psych)
 library(tidyverse)
 library(ggplot2)
 library(directlabels)
+library(reshape2)
 ```
 
 
@@ -29,6 +30,7 @@ us_suppliers <- read.csv("US_Suppliers.csv", stringsAsFactors = TRUE)
 # Rename a the Soybeans feature in us_suppliers
 colnames(us_suppliers)[colnames(us_suppliers)=="Oils..ex..Soybean." ] <- "Soybeans"
 
+# Display the structure of data frame
 us_markets %>% head(4)
 us_suppliers %>% head(4)
 us_competitor %>% head(4)
@@ -44,13 +46,10 @@ us_markets_tidy <- us_markets[-c(1:4)]
 #us_markets_tidy
 #str(us_markets_tidy)
 
-#pairs.panels(us_markets_tidy[1:25])
-#cor.plot(us_markets_tidy, MAR = TRUE, symmetric = TRUE)
-
-# Create the training and 
+# Create the training dataset
 sample_exchange_markets_train <- us_markets_tidy[1:600, ]
 
-# Run Cubist Algorithm On Training and Testing Datasets to predict Soybean
+# Run Cubist Algorithm On Training Dataset to predict Soybean
 exchange_model_markets <- cubist(sample_exchange_markets_train[-5], sample_exchange_markets_train$Soybeans)
 #exchange_model_markets
 summary(exchange_model_markets)
@@ -66,10 +65,10 @@ summary(exchange_model_markets)
 us_suppliers_tidy <- us_suppliers[-c(1:3)]
 #(us_suppliers_tidy)
 
-# Create the training and 
+# Create the training dataset
 sample_exchange_suppliers_train <- us_suppliers_tidy[1:600, ]
 
-# Run Cubist Algorithm On Training and Testing Datasets to predict Soybean
+# Run Cubist Algorithm On Training Dataset to predict Soybean
 exchange_model_suppliers <- cubist(sample_exchange_suppliers_train[-7], sample_exchange_suppliers_train$Soybeans)
 #exchange_model_suppliers
 summary(exchange_model_suppliers)
@@ -87,10 +86,10 @@ summary(exchange_model_suppliers)
 us_competitor_tidy <- us_competitor[-c(1:4)]
 #us_competitor_tidy
 
-# Create the training and 
+# Create the training dataset
 sample_exchange_comp_train <- us_competitor_tidy[1:600, ]
 
-# Run Cubist Algorithm On Training and Testing Datasets to predict Soybean
+# Run Cubist Algorithm On Training Dataset to predict Soybean
 exchange_model_comp <- cubist(sample_exchange_comp_train[-5], sample_exchange_comp_train$Soybeans)
 #exchange_model_comp
 summary(exchange_model_comp)
@@ -107,6 +106,7 @@ us_markets_top_corr <- us_markets[c("Month", "Year", "U.S..merchandise.exports.t
                                     "U.S..agricultural.exports.to.the.World", "Soybeans", "Hides...Skins", 
                                     "Wheat", "Corn", "Bulk", "Cotton", "Wine...Beer")]
 #us_markets_top_corr
+# Save the tidy dataset as a csv for future reference
 write.csv(us_markets_top_corr, "us_markets_top_corr.csv", row.names = FALSE)
 ```
 
@@ -121,6 +121,7 @@ us_suppliers_top_corr <- us_suppliers[c("Month", "Year", "U.S..agricultural.impo
                                      "Cocoa.Paste....Butter", "Coffee..Unroasted",
                                      "Chocolate...Cocoa.Products")]
 #us_suppliers_top_corr
+# Save the tidy dataset as a csv for future reference
 write.csv(us_suppliers_top_corr, "us_suppliers_top_corr.csv", row.names = FALSE)
 ```
 
@@ -138,10 +139,12 @@ us_competitor_top_corr <- us_competitor[c("Month", "Year", "Competitor.merchandi
                                     "Fresh...Processed.Vegetables", "Beef...Beef.Products",
                                     "Wine...Beer")]
 #us_competitor_top_corr
+# Save the tidy dataset as a csv for future reference
 write.csv(us_competitor_top_corr, "us_competitor_top_corr.csv", row.names = FALSE)
 ```
 
 
+## Function Used To Create A Correlation Matrix W/ Significance Levels:  
 
 ```{r}
 # x is a matrix containing the data
@@ -195,15 +198,137 @@ corstars <-function(x, method=c("pearson", "spearman"), removeTriangle=c("upper"
 ```
 
 
-```{r}
+## Verifying Top Correlated Features To Soybeans For US Markets:  
+
+```{r, message=FALSE, warning=FALSE}
+# Save correlations in new variable and round cors to 2 decimal places
 us_markets_tidy_cor <- round(cor(us_markets_tidy),2)
 # us_markets_tidy_cor
 
+# Create the correlation matrix with significance levels using 
+# function from previous code chunk
 cor_markets_plot <- corstars(us_markets_tidy_cor)
 cor_markets_plot
 ```
 
 
+
+## Verifying Top Correlated Features To `Soybeans` For US Competitors:  
+
+```{r}
+# Save correlations in new variable and round cors to 2 decimal places
+us_competitor_tidy_cor <- round(cor(us_competitor_tidy),2)
+# us_competitor_tidy_cor
+
+# Create the correlation matrix with significance levels using 
+# function from previous code chunk
+cor_competitor_plot <- corstars(us_competitor_tidy_cor)
+cor_competitor_plot
+```
+
+
+
+## Verifying Top Correlated Features To `Soybeans` For US Suppliers:  
+
+```{r}
+# Save correlations in new variable and round cors to 2 decimal places
+us_suppliers_tidy_cor <- round(cor(us_suppliers_tidy),2)
+# us_markets_tidy_cor
+
+# Create the correlation matrix with significance levels using 
+# function from previous code chunk
+cor_suppliers_plot <- corstars(us_suppliers_tidy_cor)
+cor_suppliers_plot
+```
+
+
+
+
+## Heatmap that displays the correlation amongst the features in us_markets_tidy_cor
+
+```{r}
+# heatmap displaying correlation amongst the features of us_markets_tidy_cor
+
+# library(reshape2)
+mealted_us_markets_tidy_cor <- melt(us_markets_tidy_cor)
+
+# head(mealted_us_markets_tidy_cor)
+
+ggheatmap <- ggplot(data = mealted_us_markets_tidy_cor, aes(x=Var1, y=Var2, fill = value)) + 
+  geom_tile(color = "white") + 
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0, 
+                       limit = c(-1, 1), space = "Lab", name = "US markets correlation") + 
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 12, hjust = 1)) + 
+  coord_fixed()
+
+
+# adds the correlation values to the map
+ggheatmap + 
+  geom_text(aes(Var1, Var2, label = value), color = "black", size = 1.5) +
+  theme(axis.text.x = element_text(size = 6, face = "bold"),
+        axis.text.y = element_text(size=6, face = "bold"),
+        legend.title = element_text(color = "black", size = 10, face = "bold"),
+        legend.text = element_text(color = "black", size = 8))
+
+```
+
+## Heatmap that displays the correlation amongst the features in us_competitor_tidy
+
+```{r}
+us_competitor_tidy_cor <- round(cor(us_competitor_tidy), 2)
+
+# heatmap displaying correlation amongst the features of us_markets_tidy_cor
+
+mealted_us_competitor_tidy_cor <- melt(us_competitor_tidy_cor)
+
+# head(mealted_us_competitor_tidy_cor)
+
+ggheatmap_competitor <- ggplot(data = mealted_us_competitor_tidy_cor, aes(x=Var1, y=Var2, fill = value)) + 
+  geom_tile(color = "white") + 
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0, 
+                       limit = c(-1, 1), space = "Lab", name = "US Competitor correlation") + 
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 12, hjust = 1)) + 
+  coord_fixed()
+
+## adds the correlation values to the map
+ggheatmap_competitor + 
+  geom_text(aes(Var1, Var2, label = value), color = "black", size = 1.5) +
+    theme(axis.text.x = element_text(size = 6, face = "bold"),
+        axis.text.y = element_text(size=6, face = "bold"),
+        legend.title = element_text(color = "black", size = 10, face = "bold"),
+        legend.text = element_text(color = "black", size = 8))
+
+```
+
+
+
+## Heatmap that displays the correlation amongst the features in us_suppliers_tidy
+
+```{r}
+# heatmap displaying correlation amongst the features of us_markets_tidy_cor
+
+mealted_us_suppliers_tidy_cor <- melt(us_suppliers_tidy_cor)
+
+# head(mealted_us_suppliers_tidy_cor)
+
+ggheatmap_suppliers <- ggplot(data = mealted_us_suppliers_tidy_cor, aes(x=Var1, y=Var2, fill = value)) + 
+  geom_tile(color = "white") + 
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0, 
+                       limit = c(-1, 1), space = "Lab", name = "US Competitor correlation") + 
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 12, hjust = 1)) + 
+  coord_fixed()
+
+## adds the correlation values to the map
+ggheatmap_suppliers + 
+  geom_text(aes(Var1, Var2, label = value), color = "black", size = 1.5) +
+    theme(axis.text.x = element_text(size = 6, face = "bold"),
+        axis.text.y = element_text(size=6, face = "bold"),
+        legend.title = element_text(color = "black", size = 10, face = "bold"),
+        legend.text = element_text(color = "black", size = 8))
+```
 
 
 # Creating Data Visualizations From Tidy Data:  
@@ -211,6 +336,8 @@ cor_markets_plot
 ## Modify Datasets To Only Include Data Since 2010:  
 
 ```{r}
+# Create subsets of each top correlation datasets including only data
+# since 2010
 us_competitor_subset <- subset(us_competitor_top_corr, Year>=2010) %>% 
   unite("Date", Month:Year, sep="/", remove=TRUE)
 us_suppliers_subset <- subset(us_suppliers_top_corr, Year>=2010) %>% 
@@ -222,12 +349,11 @@ us_markets_subset <- subset(us_markets_top_corr, Year>=2010) %>%
 #us_suppliers_subset
 #us_markets_subset
 
-
+# Save each top correlation dataset as a csv file for future reference
 write.csv(us_competitor_subset, "us_competitor_subset.csv", row.names = FALSE)
 write.csv(us_suppliers_subset, "us_suppliers_subset.csv", row.names = FALSE)
 write.csv(us_markets_subset, "us_markets_subset.csv", row.names = FALSE)
 ```
-
 
 
 
@@ -236,11 +362,10 @@ write.csv(us_markets_subset, "us_markets_subset.csv", row.names = FALSE)
 ```{r}
 plot(us_markets_subset$Soybeans, type="l", xlab="Months Since Jan 2010", ylab="Soybean Exchange Rate",
      main="US Market Soybean Exchange Rates (2010-2019)")
-
 ```
 
 
-## Trends Seen In US Soybean Exports Since 1970:
+## Trends Seen In US Soybean Exchange Rates Since 1970:
 
 
 ```{r}
@@ -255,7 +380,7 @@ plot(us_markets_date$Soybeans, type="l", xlab="Months Since Jan 1970", ylab="Soy
 ```
 
 
-## Competitor Exports Of Soybeans vs. US Exports Of Soybeans Since 1970:  
+## Competitor vs. US Exchange Rates Of Soybeans Since 1970:  
 
 
 ```{r}
@@ -272,11 +397,14 @@ us_vs_competitor <- us_vs_competitor_temp[c("Month", "Year", "US_Soybeans", "Com
 
 us_vs_competitor_dif <- cbind(us_vs_competitor, (us_vs_competitor$US_Soybeans)- (us_vs_competitor$Competitor_Soybeans))
 
-plot(us_vs_competitor_dif$`(us_vs_competitor$US_Soybeans) - (us_vs_competitor$Competitor_Soybeans)`, type="l", )
+
+plot(us_vs_competitor_dif$`(us_vs_competitor$US_Soybeans) - (us_vs_competitor$Competitor_Soybeans)`,
+    xlab="Month Since 1970", ylab="Dif b/w US & Competitor Exchange Rates",
+    main="Competitor vs. US Exchange Rates Of Soybeans Since 1970", type="l", )
 ```
 
 
-## Competitor Exports Of Soybeans vs. US Exports Of Soybeans Since 2010:  
+## Competitor vs. US Exchange Rates Of Soybeans Since 2010:  
 
 
 ```{r}
@@ -295,7 +423,9 @@ us_vs_competitor_subset <- us_vs_competitor_temp_subset[c("Month", "Year", "US_S
 
 us_vs_competitor_subset_dif <- cbind(us_vs_competitor_subset, (us_vs_competitor_subset$US_Soybeans)- (us_vs_competitor_subset$Competitor_Soybeans))
 
-plot(us_vs_competitor_subset_dif$`(us_vs_competitor_subset$US_Soybeans) - (us_vs_competitor_subset$Competitor_Soybeans)`, type="l", )
+plot(us_vs_competitor_subset_dif$`(us_vs_competitor_subset$US_Soybeans) - (us_vs_competitor_subset$Competitor_Soybeans)`,
+     xlab="Month Since 2010", ylab="Dif b/w US & Competitor Exchange Rates",
+    main="Competitor vs. US Exchange Rates Of Soybeans Since 2010", type="l", )
 ```
 
 
@@ -322,11 +452,18 @@ write.csv(us_markets_subset_seasons, "us_markets_subset_seasons.csv", row.names 
 
 plot <- ggplot(data=us_markets_subset_seasons, aes(x=Month, y=Soybeans, group=Year, colour=Year)) +
   geom_line() +
-  xlim(0,13) +
   ylim(90.5,110) +
+    scale_x_continuous(breaks = c(1:12)) +
   labs(xlab="Month", ylab="Soybeans Exchange Rate", 
-       title="Monthly Soybean Exhange Rate Trends - US Markets") +
-  theme(plot.title = element_text(hjust = 0.5))
+       title="Monthly Soybean Exhange Rate Trends Since 2010 - US Markets") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  geom_vline(xintercept=c(3, 6, 9, 12), linetype="dashed") +
+  geom_text(aes(x=3, label="Winter", y=99), color="black", hjust=2) +
+  geom_text(aes(x=6, label="Spring", y=99), color="black", hjust=2) +
+  geom_text(aes(x=9, label="Summer", y=99), color="black", hjust=2) +
+  geom_text(aes(x=12, label="Fall", y=99), color="black", hjust=3)
+
+#colour="blue", angle=90, vjust = 1.2, text=element_text(size=11))+
 
 print(direct.label(plot,list("last.qp",rot=30)))
 ```
@@ -354,11 +491,16 @@ write.csv(us_competitor_subset_seasons, "us_competitor_subset_seasons.csv", row.
 
 plot <- ggplot(data=us_competitor_subset_seasons, aes(x=Month, y=Soybeans, group=Year, colour=Year)) +
   geom_line() +
-  xlim(0,13) +
   ylim(90.5,130) +
+    scale_x_continuous(breaks = c(1:12)) +
   labs(xlab="Month", ylab="Soybeans Exchange Rate", 
-       title="Monthly Soybean Exhange Rate Trends - US Competitors") +
-  theme(plot.title = element_text(hjust = 0.5))
+       title="Monthly Soybean Exhange Rate Trends Since 2010 - US Competitors") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  geom_vline(xintercept=c(3, 6, 9, 12), linetype="dashed") +
+  geom_text(aes(x=3, label="Winter", y=110), color="black", hjust=2) +
+  geom_text(aes(x=6, label="Spring", y=110), color="black", hjust=2) +
+  geom_text(aes(x=9, label="Summer", y=110), color="black", hjust=2) +
+  geom_text(aes(x=12, label="Fall", y=110), color="black", hjust=3)
 
 print(direct.label(plot,list("last.qp",rot=30)))
 ```
@@ -366,7 +508,7 @@ print(direct.label(plot,list("last.qp",rot=30)))
 
 ## Seasonality In US Suppliers Data:
 
-```{r}
+```{r, warning=FALSE}
 us_suppliers_subset_seasons <- subset(us_suppliers_top_corr, Year>=2010) %>% 
   select(1,2,4)
 us_suppliers_subset_seasons$Month = as.numeric(as.character(us_suppliers_subset_seasons$Month))
@@ -386,32 +528,43 @@ write.csv(us_suppliers_subset_seasons, "us_suppliers_subset_seasons.csv", row.na
 
 plot <- ggplot(data=us_suppliers_subset_seasons, aes(x=Month, y=Soybeans, group=Year, colour=Year)) +
   geom_line() +
-  xlim(0,13) +
   ylim(90.5,130) +
+  scale_x_continuous(breaks = c(1:12)) +
   labs(xlab="Month", ylab="Soybeans Exchange Rate", 
-       title="Monthly Soybean Exhange Rate Trends - US Suppliers") +
-  theme(plot.title = element_text(hjust = 0.5))
+       title="Monthly Soybean Exhange Rate Trends Since 2010 - US Suppliers") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  geom_vline(xintercept=c(3, 6, 9, 12), linetype="dashed") +
+  geom_text(aes(x=3, label="Winter", y=108), color="black", hjust=2) +
+  geom_text(aes(x=6, label="Spring", y=108), color="black", hjust=2) +
+  geom_text(aes(x=9, label="Summer", y=108), color="black", hjust=2) +
+  geom_text(aes(x=12, label="Fall", y=108), color="black", hjust=3)
 
 print(direct.label(plot,list("last.qp",rot=30)))
 ```
+
+
+
 # Monthly Competitor Soybeans Vs. Supplier Soybeans Vs. US Soybeans for Years (2010 - 2019)
+
+
 ```{r}
 all_subsets_together <- read.csv("soybeans_subset_all_three.csv", stringsAsFactors = TRUE)
-
 year_value <- c("2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019")
-
 # filters the dataset by Year in "year_value" and generates a graph containing each subsets monthly soybean exchange rate for that given year.
 for(c in year_value)
 {
   all_subsets_by_year <- all_subsets_together %>% filter(Year == c)
-  print(ggplot(all_subsets_by_year, aes(x = Month, y = U.S_Soybeans, , group = Label, colour = Label)) 
+  print(ggplot(all_subsets_by_year, aes(x = Month, y = U.S_Soybeans, group = Label, colour = Label)) 
       + geom_line()
       + ggtitle(paste("Monthly Soybean Exchange Rate in Year", c))
       + theme(plot.title = element_text(hjust = 0.5))
-      + scale_x_continuous(breaks = seq(min(all_subsets_by_year$Month) + 1, max(all_subsets_by_year$Month), by = 2), "Month"))
+      + scale_x_continuous(breaks = seq(min(all_subsets_by_year$Month) + 1, max(all_subsets_by_year$Month), by = 2), "Month")+
+      geom_vline(xintercept=c(3, 6, 9, 12), linetype="dashed") +
+  geom_text(aes(x=3, label="Winter", y=106), color="black", hjust=2) +
+  geom_text(aes(x=6, label="Spring", y=106), color="black", hjust=2) +
+  geom_text(aes(x=9, label="Summer", y=106), color="black", hjust=2) +
+  geom_text(aes(x=12, label="Fall", y=106), color="black", hjust=3)) 
   
 }
 ```
-
-
 
