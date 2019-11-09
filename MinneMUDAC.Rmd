@@ -394,7 +394,24 @@ plot <- ggplot(data=us_suppliers_subset_seasons, aes(x=Month, y=Soybeans, group=
 
 print(direct.label(plot,list("last.qp",rot=30)))
 ```
+# Monthly Competitor Soybeans Vs. Supplier Soybeans Vs. US Soybeans for Years (2010 - 2019)
+```{r}
+all_subsets_together <- read.csv("soybeans_subset_all_three.csv", stringsAsFactors = TRUE)
 
+year_value <- c("2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019")
+
+# filters the dataset by Year in "year_value" and generates a graph containing each subsets monthly soybean exchange rate for that given year.
+for(c in year_value)
+{
+  all_subsets_by_year <- all_subsets_together %>% filter(Year == c)
+  print(ggplot(all_subsets_by_year, aes(x = Month, y = U.S_Soybeans, , group = Label, colour = Label)) 
+      + geom_line()
+      + ggtitle(paste("Monthly Soybean Exchange Rate in Year", c))
+      + theme(plot.title = element_text(hjust = 0.5))
+      + scale_x_continuous(breaks = seq(min(all_subsets_by_year$Month) + 1, max(all_subsets_by_year$Month), by = 2), "Month"))
+  
+}
+```
 
 
 
