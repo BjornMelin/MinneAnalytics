@@ -1,0 +1,400 @@
+---
+title: "MinneMUDAC Data Analytics Competition"
+author: "Bjorn Melin"
+date: "10/24/19"
+output:
+  html_document:
+    df_print: paged
+---
+
+## Load All Libraries Used:  
+
+```{r, message=FALSE, warning=FALSE}
+# Load the libraries we will need
+library(Cubist)
+library(psych)
+library(tidyverse)
+library(ggplot2)
+library(directlabels)
+```
+
+
+## Load In Tidy Datasets For US Commodities:
+
+```{r}
+# Load the dataset
+us_markets <- read.csv("US_Markets.csv", stringsAsFactors = TRUE)
+us_competitor <- read.csv("competitor_Markets.csv", stringsAsFactors = TRUE)
+us_suppliers <- read.csv("US_Suppliers.csv", stringsAsFactors = TRUE)
+# Rename a the Soybeans feature in us_suppliers
+colnames(us_suppliers)[colnames(us_suppliers)=="Oils..ex..Soybean." ] <- "Soybeans"
+
+us_markets %>% head(4)
+us_suppliers %>% head(4)
+us_competitor %>% head(4)
+```  
+
+
+
+## Run `Cubist` Algorithm To Find Features With High Correlation To Soybeans For US Markets:
+
+```{r, message=FALSE, warning=FALSE}
+# Tidy the us_markets dataset by removing variables which will not be of interest
+us_markets_tidy <- us_markets[-c(1:4)]
+#us_markets_tidy
+#str(us_markets_tidy)
+
+#pairs.panels(us_markets_tidy[1:25])
+#cor.plot(us_markets_tidy, MAR = TRUE, symmetric = TRUE)
+
+# Create the training and 
+sample_exchange_markets_train <- us_markets_tidy[1:600, ]
+
+# Run Cubist Algorithm On Training and Testing Datasets to predict Soybean
+exchange_model_markets <- cubist(sample_exchange_markets_train[-5], sample_exchange_markets_train$Soybeans)
+#exchange_model_markets
+summary(exchange_model_markets)
+```
+
+
+
+
+## Run `Cubist` Algorithm To Find Features With High Correlation To Soybeans For US Suppliers:
+
+```{r}
+# Tidy the us_suppliers dataset by removing variables which will not be of interest
+us_suppliers_tidy <- us_suppliers[-c(1:3)]
+#(us_suppliers_tidy)
+
+# Create the training and 
+sample_exchange_suppliers_train <- us_suppliers_tidy[1:600, ]
+
+# Run Cubist Algorithm On Training and Testing Datasets to predict Soybean
+exchange_model_suppliers <- cubist(sample_exchange_suppliers_train[-7], sample_exchange_suppliers_train$Soybeans)
+#exchange_model_suppliers
+summary(exchange_model_suppliers)
+```
+
+
+
+
+
+
+## Run `Cubist` Algorithm To Find Features With High Correlation To Soybeans For US Competitors:
+
+```{r}
+# Tidy the us_competitor dataset by removing variables which will not be of interest
+us_competitor_tidy <- us_competitor[-c(1:4)]
+#us_competitor_tidy
+
+# Create the training and 
+sample_exchange_comp_train <- us_competitor_tidy[1:600, ]
+
+# Run Cubist Algorithm On Training and Testing Datasets to predict Soybean
+exchange_model_comp <- cubist(sample_exchange_comp_train[-5], sample_exchange_comp_train$Soybeans)
+#exchange_model_comp
+summary(exchange_model_comp)
+```
+
+
+
+## Remove All Vars Below 90% Correlated To Soybeans From US Markets DF:
+
+```{r}
+# Create a new tidied data frame only containing 
+# variables which are above 90% correlated with Soybeans
+us_markets_top_corr <- us_markets[c("Month", "Year", "U.S..merchandise.exports.to.the.World",   
+                                    "U.S..agricultural.exports.to.the.World", "Soybeans", "Hides...Skins", 
+                                    "Wheat", "Corn", "Bulk", "Cotton", "Wine...Beer")]
+#us_markets_top_corr
+write.csv(us_markets_top_corr, "us_markets_top_corr.csv", row.names = FALSE)
+```
+
+
+## Remove All Vars Below 90% Correlated To Soybeans From Suppliers DF:
+
+```{r}
+# Create a new tidied data frame only containing 
+# variables which are above 90% correlated with Soybeans
+us_suppliers_top_corr <- us_suppliers[c("Month", "Year", "U.S..agricultural.imports",   
+                                     "Soybeans", "Intermediates", "Fish.Products", 
+                                     "Cocoa.Paste....Butter", "Coffee..Unroasted",
+                                     "Chocolate...Cocoa.Products")]
+#us_suppliers_top_corr
+write.csv(us_suppliers_top_corr, "us_suppliers_top_corr.csv", row.names = FALSE)
+```
+
+
+
+## Remove All Vars Below 90% Correlated To Soybeans From US competitors DF:
+
+```{r}
+# Create a new tidied data frame only containing 
+# variables which are above 90% correlated with Soybeans
+us_competitor_top_corr <- us_competitor[c("Month", "Year", "Competitor.merchandise.exports.to.the.World" ,   
+                                    "Competitor.agricultural.exports.to.the.World", "Soybeans", 
+                                    "Tobacco", "Corn", "Soymeal", "Bulk", "Rice", "Tree.Nuts",
+                                    "Dairy.Products", "Fresh...Processed.Fruit",
+                                    "Fresh...Processed.Vegetables", "Beef...Beef.Products",
+                                    "Wine...Beer")]
+#us_competitor_top_corr
+write.csv(us_competitor_top_corr, "us_competitor_top_corr.csv", row.names = FALSE)
+```
+
+
+
+```{r}
+# x is a matrix containing the data
+# method : correlation method. "pearson"" or "spearman"" is supported
+# removeTriangle : remove upper or lower triangle
+# results :  if "html" or "latex"
+  # the results will be displayed in html or latex format
+corstars <-function(x, method=c("pearson", "spearman"), removeTriangle=c("upper", "lower"),
+                     result=c("none", "html", "latex")){
+    #Compute correlation matrix
+    require(Hmisc)
+    x <- as.matrix(x)
+    correlation_matrix<-rcorr(x, type=method[1])
+    R <- correlation_matrix$r # Matrix of correlation coeficients
+    p <- correlation_matrix$P # Matrix of p-value 
+    
+    ## Define notions for significance levels; spacing is important.
+    mystars <- ifelse(p < .0001, "****", ifelse(p < .001, "*** ", ifelse(p < .01, "**  ", ifelse(p < .05, "*   ", "    "))))
+    
+    ## trunctuate the correlation matrix to two decimal
+    R <- format(round(cbind(rep(-1.11, ncol(x)), R), 2))[,-1]
+    
+    ## build a new matrix that includes the correlations with their apropriate stars
+    Rnew <- matrix(paste(R, mystars, sep=""), ncol=ncol(x))
+    diag(Rnew) <- paste(diag(R), " ", sep="")
+    rownames(Rnew) <- colnames(x)
+    colnames(Rnew) <- paste(colnames(x), "", sep="")
+    
+    ## remove upper triangle of correlation matrix
+    if(removeTriangle[1]=="upper"){
+      Rnew <- as.matrix(Rnew)
+      Rnew[upper.tri(Rnew, diag = TRUE)] <- ""
+      Rnew <- as.data.frame(Rnew)
+    }
+    
+    ## remove lower triangle of correlation matrix
+    else if(removeTriangle[1]=="lower"){
+      Rnew <- as.matrix(Rnew)
+      Rnew[lower.tri(Rnew, diag = TRUE)] <- ""
+      Rnew <- as.data.frame(Rnew)
+    }
+    
+    ## remove last column and return the correlation matrix
+    Rnew <- cbind(Rnew[1:length(Rnew)-1])
+    if (result[1]=="none") return(Rnew)
+    else{
+      if(result[1]=="html") print(xtable(Rnew), type="html")
+      else print(xtable(Rnew), type="latex") 
+    }
+} 
+```
+
+
+```{r}
+us_markets_tidy_cor <- round(cor(us_markets_tidy),2)
+# us_markets_tidy_cor
+
+cor_markets_plot <- corstars(us_markets_tidy_cor)
+cor_markets_plot
+```
+
+
+
+
+# Creating Data Visualizations From Tidy Data:  
+
+## Modify Datasets To Only Include Data Since 2010:  
+
+```{r}
+us_competitor_subset <- subset(us_competitor_top_corr, Year>=2010) %>% 
+  unite("Date", Month:Year, sep="/", remove=TRUE)
+us_suppliers_subset <- subset(us_suppliers_top_corr, Year>=2010) %>% 
+  unite("Date", Month:Year, sep="/", remove=TRUE)
+us_markets_subset <- subset(us_markets_top_corr, Year>=2010) %>% 
+  unite("Date", Month:Year, sep="/", remove=TRUE)
+
+#us_competitor_subset
+#us_suppliers_subset
+#us_markets_subset
+
+
+write.csv(us_competitor_subset, "us_competitor_subset.csv", row.names = FALSE)
+write.csv(us_suppliers_subset, "us_suppliers_subset.csv", row.names = FALSE)
+write.csv(us_markets_subset, "us_markets_subset.csv", row.names = FALSE)
+```
+
+
+
+
+## Trends Seen In US Soybean Exports Since 2010:
+
+```{r}
+plot(us_markets_subset$Soybeans, type="l", xlab="Months Since Jan 2010", ylab="Soybean Exchange Rate",
+     main="US Market Soybean Exchange Rates (2010-2019)")
+
+```
+
+
+## Trends Seen In US Soybean Exports Since 1970:
+
+
+```{r}
+us_markets_date <- us_markets_top_corr %>% 
+  unite("Date", Month:Year, sep="/", remove=TRUE)
+
+plot(us_markets_date$Soybeans, type="l", xlab="Months Since Jan 1970", ylab="Soybean Exchange Rate",
+     main="US Market Soybean Exchange Rates (1970-2019)")
+
+#ggplot(data=us_markets_top_corr, aes(x=Year, y=Soybeans, group=Month)) +
+#  geom_line(color=us_markets_top_corr$Month) 
+```
+
+
+## Competitor Exports Of Soybeans vs. US Exports Of Soybeans Since 1970:  
+
+
+```{r}
+us_vs_competitor_temp <- cbind(us_markets_top_corr, us_competitor_top_corr$Soybeans)
+
+# Rename a the Soybeans feature in us_vs_competitor_temp
+colnames(us_vs_competitor_temp)[colnames(us_vs_competitor_temp)=="Soybeans" ] <- "US_Soybeans"
+# Rename a the Soybeans feature in us_vs_competitor_temp
+colnames(us_vs_competitor_temp)[colnames(us_vs_competitor_temp)=="us_competitor_top_corr$Soybeans" ] <- "Competitor_Soybeans"
+
+us_vs_competitor <- us_vs_competitor_temp[c("Month", "Year", "US_Soybeans", "Competitor_Soybeans")]
+
+#us_vs_competitor
+
+us_vs_competitor_dif <- cbind(us_vs_competitor, (us_vs_competitor$US_Soybeans)- (us_vs_competitor$Competitor_Soybeans))
+
+plot(us_vs_competitor_dif$`(us_vs_competitor$US_Soybeans) - (us_vs_competitor$Competitor_Soybeans)`, type="l", )
+```
+
+
+## Competitor Exports Of Soybeans vs. US Exports Of Soybeans Since 2010:  
+
+
+```{r}
+us_vs_competitor_temp_subset <- cbind(us_markets_top_corr, us_competitor_top_corr$Soybeans) %>% 
+  subset(Year >= 2010)
+#us_vs_competitor_temp_subset
+
+# Rename a the Soybeans feature in us_vs_competitor_temp
+colnames(us_vs_competitor_temp_subset)[colnames(us_vs_competitor_temp_subset)=="Soybeans" ] <- "US_Soybeans"
+# Rename a the Soybeans feature in us_vs_competitor_temp
+colnames(us_vs_competitor_temp_subset)[colnames(us_vs_competitor_temp_subset)=="us_competitor_top_corr$Soybeans" ] <- "Competitor_Soybeans"
+
+us_vs_competitor_subset <- us_vs_competitor_temp_subset[c("Month", "Year", "US_Soybeans", "Competitor_Soybeans")]
+
+#us_vs_competitor_subset
+
+us_vs_competitor_subset_dif <- cbind(us_vs_competitor_subset, (us_vs_competitor_subset$US_Soybeans)- (us_vs_competitor_subset$Competitor_Soybeans))
+
+plot(us_vs_competitor_subset_dif$`(us_vs_competitor_subset$US_Soybeans) - (us_vs_competitor_subset$Competitor_Soybeans)`, type="l", )
+```
+
+
+## Seasonality In US Markets Data:
+
+```{r}
+us_markets_subset_seasons <- subset(us_markets_top_corr, Year>=2010) %>% 
+    select(1,2,5)
+us_markets_subset_seasons$Month = as.numeric(as.character(us_markets_subset_seasons$Month))
+us_markets_subset_seasons$Year = as.numeric(as.character(us_markets_subset_seasons$Year))
+
+us_markets_subset_seasons <- us_markets_subset_seasons %>% 
+    mutate(
+    Season = case_when(
+      Month %in% 9:11 ~ "Fall",
+      Month %in%  c(12,1:2)  ~ "Winter",
+      Month %in%  3:5  ~ "Spring",
+      TRUE ~ "Summer"))
+
+#us_markets_subset_seasons
+
+write.csv(us_markets_subset_seasons, "us_markets_subset_seasons.csv", row.names = FALSE)
+
+
+plot <- ggplot(data=us_markets_subset_seasons, aes(x=Month, y=Soybeans, group=Year, colour=Year)) +
+  geom_line() +
+  xlim(0,13) +
+  ylim(90.5,110) +
+  labs(xlab="Month", ylab="Soybeans Exchange Rate", 
+       title="Monthly Soybean Exhange Rate Trends - US Markets") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+print(direct.label(plot,list("last.qp",rot=30)))
+```
+
+
+## Seasonality In US Competitor Data:
+
+```{r}
+us_competitor_subset_seasons <- subset(us_competitor_top_corr, Year>=2010) %>% 
+  select(1,2,5)
+us_competitor_subset_seasons$Month = as.numeric(as.character(us_competitor_subset_seasons$Month))
+us_competitor_subset_seasons$Year = as.numeric(as.character(us_competitor_subset_seasons$Year))
+
+us_competitor_subset_seasons <- us_competitor_subset_seasons %>% 
+    mutate(
+    Season = case_when(
+      Month %in% 9:11 ~ "Fall",
+      Month %in%  c(12,1:2)  ~ "Winter",
+      Month %in%  3:5  ~ "Spring",
+      TRUE ~ "Summer"))
+
+#us_competitor_subset_seasons
+
+write.csv(us_competitor_subset_seasons, "us_competitor_subset_seasons.csv", row.names = FALSE)
+
+plot <- ggplot(data=us_competitor_subset_seasons, aes(x=Month, y=Soybeans, group=Year, colour=Year)) +
+  geom_line() +
+  xlim(0,13) +
+  ylim(90.5,130) +
+  labs(xlab="Month", ylab="Soybeans Exchange Rate", 
+       title="Monthly Soybean Exhange Rate Trends - US Competitors") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+print(direct.label(plot,list("last.qp",rot=30)))
+```
+
+
+## Seasonality In US Suppliers Data:
+
+```{r}
+us_suppliers_subset_seasons <- subset(us_suppliers_top_corr, Year>=2010) %>% 
+  select(1,2,4)
+us_suppliers_subset_seasons$Month = as.numeric(as.character(us_suppliers_subset_seasons$Month))
+us_suppliers_subset_seasons$Year = as.numeric(as.character(us_suppliers_subset_seasons$Year))
+
+us_suppliers_subset_seasons <- us_suppliers_subset_seasons %>% 
+    mutate(
+    Season = case_when(
+      Month %in% 9:11 ~ "Fall",
+      Month %in%  c(12,1:2)  ~ "Winter",
+      Month %in%  3:5  ~ "Spring",
+      TRUE ~ "Summer"))
+
+#us_suppliers_subset_seasons
+
+write.csv(us_suppliers_subset_seasons, "us_suppliers_subset_seasons.csv", row.names = FALSE)
+
+plot <- ggplot(data=us_suppliers_subset_seasons, aes(x=Month, y=Soybeans, group=Year, colour=Year)) +
+  geom_line() +
+  xlim(0,13) +
+  ylim(90.5,130) +
+  labs(xlab="Month", ylab="Soybeans Exchange Rate", 
+       title="Monthly Soybean Exhange Rate Trends - US Suppliers") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+print(direct.label(plot,list("last.qp",rot=30)))
+```
+
+
+
+
